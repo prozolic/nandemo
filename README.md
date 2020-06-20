@@ -1,4 +1,4 @@
-# nandemo(文字列取得ライブラリ)
+# nandemo(文字列変換ライブラリ)
 
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
