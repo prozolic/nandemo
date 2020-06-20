@@ -47,6 +47,7 @@ namespace nandemo
 {
     using int32 = std::int32_t;
     using int64 = std::int64_t;
+    using uint8 = std::uint8_t;
     using usize = std::size_t;
     using nandemo_nullptr = std::nullptr_t;
 }
@@ -373,10 +374,23 @@ namespace nandemo::detail
 
 namespace nandemo
 {
-    template<class type>
+    enum class level : uint8
+    {
+        normal = 0,
+        class_name = 1
+    };
+
+    template<level lv = level::normal, class type>
     inline auto to_string(const type& value)
     {
-        return detail::to_string(value);
+        if constexpr (lv == level::normal)
+        {
+            return detail::to_string(value);
+        }
+        else if constexpr (lv == level::class_name)
+        {
+            return detail::to_string_from_class(value);
+        }
     }
 
     template<class type, class deleter_type>
