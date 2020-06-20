@@ -65,19 +65,19 @@ namespace nandemo::math
     inline constexpr bool is_numerical_v = std::is_floating_point_v<type> || std::is_integral_v<type>;
 
     template<class type, typename std::enable_if_t<is_numerical_v<type> ,nullptr_t> = nullptr>
-    constexpr type abs(type value)
+    inline constexpr type abs(type value)
     {
         return (value < zero_v<type>) ? -value : value; 
     }
 
     template<class type, typename std::enable_if_t<is_numerical_v<type> ,nullptr_t> = nullptr>
-    constexpr bool sign(type value)
+    inline constexpr bool sign(type value)
     {
         return (value < zero_v<type>);
     }
 
     template<class type, typename std::enable_if_t<std::is_integral_v<type>,nullptr_t> = nullptr>
-    constexpr usize digits_unroll4(type value)
+    inline constexpr usize digits_unroll4(type value)
     {
         usize number{1};
 
@@ -119,7 +119,7 @@ namespace nandemo::detail
         struct dummy_to_string_functor
         {
             template<class real_type>
-            auto operator()(const real_type& value) const
+            inline auto operator()(const real_type& value) const
             {
                 return value.to_string();
             }
@@ -176,7 +176,7 @@ namespace nandemo::detail
     struct string_type
     {
         template<class type>
-        std::string operator()(const type& value) const
+        inline std::string operator()(const type& value) const
         {
             return std::string{value};
         }
@@ -185,7 +185,7 @@ namespace nandemo::detail
     struct integral_type
     {
         template<class type>
-        std::string operator()(type value) const
+        inline std::string operator()(type value) const
         {
             const auto abs_value = math::abs(value);
             const usize offset = math::sign(value) ? 1 : 0;
@@ -205,7 +205,7 @@ namespace nandemo::detail
         }
 
         template<class type>
-        void to_digit10(type value, char* first, usize length) const noexcept
+        inline void to_digit10(type value, char* first, usize length) const noexcept
         {
             static constexpr char digits[] = 
 	        "0001020304050607080910111213141516171819"
@@ -218,7 +218,7 @@ namespace nandemo::detail
             usize position = length - 1;
             while(value >= 100)
             {
-                const usize index = (value % 100) * 2;
+                const usize index = (value % 100) << 1;
                 value /= 100;
                 chars[position - 1] = digits[index];
                 chars[position] = digits[index + 1];
@@ -231,7 +231,7 @@ namespace nandemo::detail
                 return ;
             }
 
-            const usize index = value * 2;
+            const usize index = value << 1;
             chars[position - 1] = digits[index];
             chars[position] = digits[index + 1];
             return;
@@ -243,7 +243,7 @@ namespace nandemo::detail
     struct float_type
     {
         template<class type>
-        std::string operator()(type value) const
+        inline std::string operator()(type value) const
         {
             return std::to_string(value);
         }
@@ -253,7 +253,7 @@ namespace nandemo::detail
     struct class_type
     {   
         template<class type>
-        std::string operator()(const type& value) const
+        inline std::string operator()(const type& value) const
         {
             return to_string_type_name(typeid(value));
         }
@@ -268,7 +268,7 @@ namespace nandemo::detail
         };
 
 #if defined(__GNUC__)
-        auto to_string_type_name(const std::type_info& info) const
+        inline auto to_string_type_name(const std::type_info& info) const
         {
             int32 status{0};
             std::unique_ptr<char, ptr_deleter> ptr( abi::__cxa_demangle(info.name(), nullptr, nullptr,&status)); 
@@ -276,7 +276,7 @@ namespace nandemo::detail
             return std::string{ptr.get()}; 
         }
 #elif
-        auto to_string_type_name(const std::type_info& info) const
+        inline auto to_string_type_name(const std::type_info& info) const
         {
             return std::string{info.name()};   
         }      
@@ -285,7 +285,7 @@ namespace nandemo::detail
 
     struct bool_type
     {
-        std::string operator()(bool value) const
+        inline std::string operator()(bool value) const
         {
             return value ? "true" : "false";
         }
@@ -293,7 +293,7 @@ namespace nandemo::detail
 
 
     template<class type>
-    auto to_string_from_numerical(type value)
+    inline auto to_string_from_numerical(type value)
     {
         if constexpr (std::is_floating_point_v<type>)
         {
@@ -306,19 +306,19 @@ namespace nandemo::detail
     }
 
     template<class type>
-    auto to_string_from_bool(type value)
+    inline auto to_string_from_bool(type value)
     {
         return bool_type()(value);
     }   
 
     template<class type>
-    auto to_string_from_class(const type& value)
+    inline auto to_string_from_class(const type& value)
     {
         return class_type()(value);
     }
 
     template<class type>
-    auto to_string_core(const type& value)
+    inline auto to_string_core(const type& value)
     {
         if constexpr (convert_to_stdstring_type_v<type>)
         {
@@ -341,14 +341,14 @@ namespace nandemo::detail
     struct has_to_string_function_type
     {
         template<class type>
-        std::string operator()(const type& value) const
+        inline std::string operator()(const type& value) const
         {
             return value.to_string();
         }
     };
 
     template<class type>
-    auto to_string(const type& value) -> std::string
+    inline auto to_string(const type& value) -> std::string
     {
         if constexpr (has_to_string_v<type>)
         {
@@ -372,19 +372,19 @@ namespace nandemo::detail
 namespace nandemo
 {
     template<class type>
-    auto to_string(const type& value)
+    inline auto to_string(const type& value)
     {
         return detail::to_string(value);
     }
 
     template<class type, class deleter_type>
-    auto to_string(const std::unique_ptr<type, deleter_type>& unique)
+    inline auto to_string(const std::unique_ptr<type, deleter_type>& unique)
     {
         return to_string(*unique);
     }
 
     template<class type>
-    auto to_string(const std::shared_ptr<type>& shared)
+    inline auto to_string(const std::shared_ptr<type>& shared)
     {
         return to_string(*shared);
     }   
