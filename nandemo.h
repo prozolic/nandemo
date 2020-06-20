@@ -48,6 +48,7 @@ namespace nandemo
     using int32 = std::int32_t;
     using int64 = std::int64_t;
     using usize = std::size_t;
+    using nandemo_nullptr = std::nullptr_t;
 }
 
 namespace nandemo::math
@@ -64,19 +65,19 @@ namespace nandemo::math
     template<class type>
     inline constexpr bool is_numerical_v = std::is_floating_point_v<type> || std::is_integral_v<type>;
 
-    template<class type, typename std::enable_if_t<is_numerical_v<type> ,nullptr_t> = nullptr>
+    template<class type, typename std::enable_if_t<is_numerical_v<type> ,nandemo_nullptr> = nullptr>
     inline constexpr type abs(type value)
     {
         return (value < zero_v<type>) ? -value : value; 
     }
 
-    template<class type, typename std::enable_if_t<is_numerical_v<type> ,nullptr_t> = nullptr>
+    template<class type, typename std::enable_if_t<is_numerical_v<type> ,nandemo_nullptr> = nullptr>
     inline constexpr bool sign(type value)
     {
         return (value < zero_v<type>);
     }
 
-    template<class type, typename std::enable_if_t<std::is_integral_v<type>,nullptr_t> = nullptr>
+    template<class type, typename std::enable_if_t<std::is_integral_v<type>,nandemo_nullptr> = nullptr>
     inline constexpr usize digits_unroll4(type value)
     {
         usize number{1};
@@ -252,12 +253,6 @@ namespace nandemo::detail
 
     struct class_type
     {   
-        template<class type>
-        inline std::string operator()(const type& value) const
-        {
-            return to_string_type_name(typeid(value));
-        }
-        
         struct ptr_deleter
         {
             template<class type>
@@ -275,12 +270,19 @@ namespace nandemo::detail
 
             return std::string{ptr.get()}; 
         }
-#elif
+#else
         inline auto to_string_type_name(const std::type_info& info) const
         {
             return std::string{info.name()};   
         }      
 #endif
+
+        template<class type>
+        inline std::string operator()(const type& value) const
+        {
+            return to_string_type_name(typeid(value));
+        }
+        
     };
 
     struct bool_type
