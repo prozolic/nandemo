@@ -29,8 +29,8 @@
 #define NANDEMO_H
 
 #include <algorithm>
-#include <charconv>
 #include <cmath>
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -50,6 +50,11 @@ namespace nandemo
     using uint8 = std::uint8_t;
     using usize = std::size_t;
     using nandemo_nullptr = std::nullptr_t;
+
+    inline constexpr usize BIT_LENGTH = CHAR_BIT;
+    inline constexpr usize BINARY_LENGTH = 2;
+    inline constexpr usize DECIMAL_LENGTH = 10;
+    inline constexpr usize HEX_LENGTH = 16;
 }
 
 namespace nandemo::math
@@ -90,6 +95,22 @@ namespace nandemo::math
             if(value < 1000) return number + 2;
             if(value < 10000) return number + 3;
             value /= static_cast<type>(10000);
+            number += 4;
+        }
+    }
+
+    template<class type, typename std::enable_if_t<std::is_integral_v<type>,nandemo_nullptr> = nullptr>
+    inline constexpr usize digits_hex_unroll4(type value)
+    {
+        usize number{1};
+
+        for(;;)
+        {
+            if(value < 16) return number;
+            if(value < 256) return number + 1;
+            if(value < 4096) return number + 2;
+            if(value < 65536) return number + 3;
+            value /= static_cast<type>(65536);
             number += 4;
         }
     }
@@ -175,39 +196,50 @@ namespace nandemo::detail
     inline constexpr bool is_bool_v = is_bool<type>::value;
 
 
+    template<class type>
     struct string_type
     {
-        template<class type>
         inline std::string operator()(const type& value) const
         {
             return std::string{value};
         }
     };
 
-    struct integral_type
+    template<class type, usize digits_type = 10>
+    struct to_digits
     {
-        template<class type>
-        inline std::string operator()(type value) const
+        inline void operator()(char* first, usize length, type value) const
         {
-            const auto abs_value = math::abs(value);
-            const usize offset = math::sign(value) ? 1 : 0;
-            const usize str_length = math::digits_unroll4(abs_value);
-
-            std::string result(str_length + offset, '\0');
-            char* result_p = &result[0];
-
-            if (math::sign(value))
+            if constexpr (digits_type == BINARY_LENGTH)
             {
-                *result_p++ = '-';
+                to_binary(first, length ,value);
             }
-
-            to_digit10(abs_value, result_p, str_length);
-
-            return result;
+            else if constexpr (digits_type == DECIMAL_LENGTH)
+            {
+                to_decimal(first, length, value);
+            }   
+            else if constexpr (digits_type == HEX_LENGTH)
+            {
+                to_hex(first, length, value);
+            }
         }
 
-        template<class type>
-        inline void to_digit10(type value, char* first, usize length) const noexcept
+        void to_binary(char* first, usize length, type value) const
+        {
+            static constexpr char digits[] = "01";
+
+            char* ch = first;
+            usize bit_index{0};
+            const usize position{length - 1};
+            
+            while(bit_index <= position)
+            {
+                ch[bit_index] = digits[(value >> (position - bit_index)) & 1]; 
+                bit_index++;
+            }
+        }
+
+        void to_decimal(char* first, usize length, type value) const
         {
             static constexpr char digits[] = 
 	        "0001020304050607080910111213141516171819"
@@ -236,15 +268,180 @@ namespace nandemo::detail
             const usize index = value << 1;
             chars[position - 1] = digits[index];
             chars[position] = digits[index + 1];
-            return;
         }
 
+        void to_hex(char* first, usize length, type value) const
+        {
+            static constexpr char digits[] = 
+	        "000102030405060708090a0b0c0d0e0f"
+            "101112131415161718191a1b1c1d1e1f"
+	        "202122232425262728292a2b2c2d2e2f"
+            "303132333435363738393a3b3c3d3e3f"
+	        "404142434445464748494a4b4c4d4e4f"
+            "505152535455565758595a5b5c5d5e5f"
+	        "606162636465666768696a6b6c6d6e6f"
+            "707172737475767778797a7b7c7d7e7f"
+	        "808182838485868788898a8b8c8d8e8f"
+            "909192939495969798999a9b9c9d9e9f"
+	        "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf"
+            "b0b1b2b3b4b5b6b7b8b9babbbcbdbebf"
+	        "c0c1c2c3c4c5c6c7c8c9cacbcccdcecf"
+            "d0d1d2d3d4d5d6d7d8d9dadbdcdddedf"
+	        "e0e1e2e3e4e5e6e7e8e9eaebecedeeef"
+            "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff";
+
+            char* ch = first;
+            usize position = length - 1;
+            while(value >= 256)
+            {
+                const usize index = (value % 256) << 1;
+                value /= 256;
+                ch[position - 1] = digits[index];
+                ch[position] = digits[index + 1];
+                position -= 2;
+            }
+            if (value < 16)
+            {
+                constexpr static char hex[] = "0123456789abcdef";
+                ch[position] = hex[value];
+                return;
+            }
+
+            const usize index = value << 1;
+            ch[position - 1] = digits[index];
+            ch[position] = digits[index + 1];
+        }
+    };
+    
+
+    template<class type, usize base_type = DECIMAL_LENGTH>
+    struct integral_type
+    {
+        inline std::string operator()(type value) const
+        {
+            if constexpr (base_type == BINARY_LENGTH)
+            {
+                return convert_binary(value);
+            }
+            else if constexpr (base_type == DECIMAL_LENGTH)
+            {
+                return convert_decimal(value);
+            }   
+            else if constexpr (base_type == HEX_LENGTH)
+            {
+                return convert_hex(value);
+            }
+        }
+
+        inline std::string convert_binary(type value) const
+        {
+            constexpr usize bits = BIT_LENGTH * sizeof(type);
+
+            std::string result(bits, '0');
+            to_digits<type, BINARY_LENGTH>()(&result[0], bits, value);
+            return result;            
+        }
+
+        inline std::string convert_decimal(type value) const
+        {
+            const auto abs_value = math::abs(value);
+            const usize offset = math::sign(value) ? 1 : 0;
+            const usize str_length = math::digits_unroll4(abs_value);
+
+            std::string result(str_length + offset, '0');
+            char* result_p = &result[0];
+
+            if (math::sign(value))
+            {
+                *result_p++ = '-';
+            }
+
+            to_digits<type, DECIMAL_LENGTH>()(result_p, str_length, abs_value);
+
+            return result;
+        }
+
+        inline std::string convert_hex(type value) const
+        {
+            const auto signed_value = static_cast<std::make_unsigned_t<type>>(value);
+            const usize length = math::digits_hex_unroll4(signed_value);
+            std::string result(length, '0');
+            char* result_p = &result[0];
+
+            to_digits<std::make_unsigned_t<type>, HEX_LENGTH>()(result_p, length, signed_value);
+            return result;            
+        }
         
     };
 
+    template<class type, usize base_type, usize padding>
+    struct integral_type_zero_padding
+    {
+        inline std::string operator()(type value) const
+        {
+            if constexpr (base_type == BINARY_LENGTH)
+            {
+                return convert_binary(value);
+            }
+            else if constexpr (base_type == DECIMAL_LENGTH)
+            {
+                return convert_decimal(value);
+            }   
+            else if constexpr (base_type == HEX_LENGTH)
+            {
+                return convert_hex(value);
+            }
+        }
+
+        inline std::string convert_binary(type value) const
+        {
+            return integral_type<type, BINARY_LENGTH>()(value);
+        }
+
+        inline std::string convert_decimal(type value) const
+        {
+            const auto abs_value = math::abs(value);
+
+            if (const usize length = math::digits_unroll4(abs_value); padding > length)
+            {
+                const usize offset = math::sign(value) ? 1 : 0;
+                std::string result(padding + offset, '0');
+                char* result_p = &result[0];
+                if (math::sign(value))
+                {
+                    *result_p = '-';
+                }
+
+                to_digits<type, DECIMAL_LENGTH>()(&result[padding - length + offset], length, abs_value);
+                return result;
+            }
+            else
+            {
+                return integral_type<type, DECIMAL_LENGTH>()(value);
+            }            
+        }
+
+        inline std::string convert_hex(type value) const
+        {
+            const auto signed_value = static_cast<std::make_unsigned_t<type>>(value);
+
+            if (const usize length = math::digits_hex_unroll4(signed_value); padding > length)
+            {
+                std::string result(padding, '0');
+                to_digits<std::make_unsigned_t<type>, HEX_LENGTH>()(&result[padding - length], length, signed_value);
+                return result;
+            }
+            else
+            {
+                return integral_type<type, HEX_LENGTH>()(value);
+            }
+        }
+
+    };
+
+    template<class type>
     struct float_type
     {
-        template<class type>
         inline std::string operator()(type value) const
         {
             return std::to_string(value);
@@ -300,11 +497,11 @@ namespace nandemo::detail
     {
         if constexpr (std::is_floating_point_v<type>)
         {
-            return float_type()(value);
+            return float_type<type>()(value);
         }
         else
         {
-            return integral_type()(value);
+            return integral_type<type, 10>()(value);
         }
     }
 
@@ -325,7 +522,7 @@ namespace nandemo::detail
     {
         if constexpr (convert_to_stdstring_type_v<type>)
         {
-            return string_type()(value);
+            return string_type<type>()(value);
         }
         else if constexpr (is_numeric_type_v<type> && !is_bool_v<type>)
         {
@@ -370,6 +567,19 @@ namespace nandemo::detail
         }
     }
 
+    template<class type, usize base, usize padding>
+    inline auto to_string_formatting(type value)
+    {
+        if constexpr (std::is_floating_point_v<type>)
+        {
+            return float_type<type>()(value);
+        }
+        else
+        {
+            return integral_type_zero_padding<type, base, padding>()(value);
+        }        
+    }
+
 }
 
 namespace nandemo
@@ -377,10 +587,42 @@ namespace nandemo
     enum class level : uint8
     {
         normal = 0,
-        class_name = 1
+        class_name = 1,
+        formatting = 2,
     };
 
-    template<level lv = level::normal, class type>
+    enum class base : uint8
+    {
+        binary = BINARY_LENGTH,
+        decimal = DECIMAL_LENGTH,
+        hex = HEX_LENGTH
+    };
+
+    template<base base_n = base::decimal, usize padding = 1, class type>
+    inline auto to_string_numeric(const type& value)
+    {
+        return detail::to_string_formatting<type, static_cast<usize>(base_n), padding>(value);
+    }
+
+    template<usize padding = 1, class type>
+    inline auto to_string_binary(const type& value)
+    {
+        return to_string_numeric<base::binary, padding>(value);
+    }
+
+    template<usize padding = 1, class type>
+    inline auto to_string_decimal(const type& value)
+    {
+        return to_string_numeric<base::decimal, padding>(value);
+    }
+
+    template<usize padding = 1, class type>
+    inline auto to_string_hex(const type& value)
+    {
+        return to_string_numeric<base::hex, padding>(value);
+    }
+
+    template<level lv = level::normal, base base_n = base::decimal, usize padding = 1, class type>
     inline auto to_string(const type& value)
     {
         if constexpr (lv == level::normal)
@@ -390,6 +632,10 @@ namespace nandemo
         else if constexpr (lv == level::class_name)
         {
             return detail::to_string_from_class(value);
+        }
+        else if constexpr (lv == level::formatting)
+        {
+            return to_string_numeric<base_n, padding>(value);
         }
     }
 
@@ -403,7 +649,7 @@ namespace nandemo
     inline auto to_string(const std::shared_ptr<type>& shared)
     {
         return to_string(*shared);
-    }   
+    }
 
 }
 
