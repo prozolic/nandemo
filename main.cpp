@@ -3,19 +3,20 @@
 #include <vector>
 #include "nandemo.h"
 
-class test_obj
+class test_class{};
+
+class test_class2
 {
 public:
     std::string to_string() const
     {
-        return "this is TEST_OBJ!!";
+        return "this is TEST_CLASS2!!";
     }
 };
 
-class test_obj2
-{};
+struct test_struct{};
 
-class test_obj3
+class test_class3
 {
 public:
     void to_string() const{}    
@@ -117,19 +118,25 @@ int main()
     }
 
     {
-        test_obj test;
+        test_class test;
         std::string result = nandemo::to_string(test);
         std::cout << result << std::endl;
     }
 
     {
-        test_obj2 test;
+        test_class2 test;
         std::string result = nandemo::to_string(test);
         std::cout << result << std::endl;
     }
 
     {
-        test_obj3 test;
+        test_class3 test;
+        std::string result = nandemo::to_string(test);
+        std::cout << result << std::endl;
+    }
+
+    {
+        test_struct test;
         std::string result = nandemo::to_string(test);
         std::cout << result << std::endl;
     }
@@ -140,6 +147,88 @@ int main()
         std::cout << result << std::endl;
     }
 
+    {
+        test_class2 test;
+        std::string result = nandemo::to_string<nandemo::level::class_name>(test);
+        std::cout << result << std::endl;
+    }
+
+    {
+        test_class2 test;
+        std::string result = nandemo::to_string<nandemo::level::normal>(test);
+        std::cout << result << std::endl;
+    }
+
+    {
+        std::size_t test{123456789};
+        std::string result = nandemo::to_string<nandemo::level::class_name>(test);
+        std::cout << result << std::endl;
+    }
+    {
+        nandemo::int32 test{347};
+        std::string result = nandemo::to_string<nandemo::level::formatting, nandemo::base::decimal, 12>(test);
+        std::cout << result << std::endl;        
+    }
+    {
+        nandemo::int32 test{348};
+        std::string result = nandemo::to_string_numeric<nandemo::base::decimal, 9>(test);
+        std::cout << result << std::endl;        
+    }
+    {
+        nandemo::int32 test{349};
+        std::string result = nandemo::to_string_decimal<4>(test);
+        std::cout << result << std::endl;        
+    }
+    {
+        nandemo::int32 test{349};
+        std::string result = nandemo::to_string_decimal(test);
+        std::cout << result << std::endl;        
+    }
+    {
+        nandemo::int32 test{1034547};
+        std::string result = nandemo::to_string<nandemo::level::formatting,nandemo::base::binary>(test);
+        std::cout << result << std::endl;        
+    }
+    {
+        nandemo::int32 test{1034547};
+        std::string result = nandemo::to_string<nandemo::level::formatting,nandemo::base::decimal, 6>(test);
+        std::cout << result << std::endl;        
+    }
+    {
+        nandemo::int32 test{-4535};
+        std::string result = nandemo::to_string<nandemo::level::formatting,nandemo::base::hex>(test);
+        std::cout << result << std::endl;        
+    }
+    {
+        nandemo::int32 test{-4535};
+        std::string result = nandemo::to_string_binary(test);
+        std::cout << result << std::endl;        
+    }
+    {
+        nandemo::int32 test{27};
+        std::string result = nandemo::to_string_numeric<nandemo::base::binary>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{27};
+        std::string result = nandemo::to_string_numeric<nandemo::base::hex, 10>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{-27};
+        std::string result = nandemo::to_string_numeric<nandemo::base::decimal, 10>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{-27};
+        std::string result = nandemo::to_string_numeric<nandemo::base::binary, 10>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{-27};
+        std::string result = nandemo::to_string_hex(test);
+        std::cout << result << std::endl;
+    }
 
     return 0;
 }
