@@ -215,8 +215,33 @@ int main()
         std::cout << result << std::endl;          
     }
     {
-        nandemo::int32 test{-27};
-        std::string result = nandemo::to_string_numeric<nandemo::base::decimal, 10>(test);
+        nandemo::int32 test{123};
+        std::string result = nandemo::to_string_numeric<nandemo::base::decimal>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{123};
+        std::string result = nandemo::to_string_numeric<nandemo::base::binary>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{123};
+        std::string result = nandemo::to_string_numeric<nandemo::base::hex>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{123};
+        std::string result = nandemo::to_string_numeric<nandemo::base::decimal, 5>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{123};
+        std::string result = nandemo::to_string_numeric<nandemo::base::binary, 5>(test);
+        std::cout << result << std::endl;          
+    }
+    {
+        nandemo::int32 test{123};
+        std::string result = nandemo::to_string_numeric<nandemo::base::hex, 5>(test);
         std::cout << result << std::endl;          
     }
     {
