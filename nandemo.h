@@ -205,7 +205,7 @@ namespace nandemo::detail
         }
     };
 
-    template<class type, usize digits_type = 10>
+    template<class type, usize digits_type = DECIMAL_LENGTH>
     struct to_digits
     {
         inline void operator()(char* first, usize length, type value) const
@@ -224,6 +224,7 @@ namespace nandemo::detail
             }
         }
 
+    private:
         void to_binary(char* first, usize length, type value) const
         {
             static constexpr char digits[] = "01";
@@ -332,13 +333,15 @@ namespace nandemo::detail
                 return convert_hex(value);
             }
         }
+    
+    private:
 
         inline std::string convert_binary(type value) const
         {
             constexpr usize bits = BIT_LENGTH * sizeof(type);
 
             std::string result(bits, '0');
-            to_digits<type, BINARY_LENGTH>()(&result[0], bits, value);
+            to_digits<type, base_type>()(&result[0], bits, value);
             return result;            
         }
 
@@ -356,19 +359,20 @@ namespace nandemo::detail
                 *result_p++ = '-';
             }
 
-            to_digits<type, DECIMAL_LENGTH>()(result_p, str_length, abs_value);
+            to_digits<type, base_type>()(result_p, str_length, abs_value);
 
             return result;
         }
 
         inline std::string convert_hex(type value) const
         {
-            const auto signed_value = static_cast<std::make_unsigned_t<type>>(value);
+            using hex_type = std::make_unsigned_t<type>;
+            const auto signed_value = static_cast<hex_type>(value);
             const usize length = math::digits_hex_unroll4(signed_value);
             std::string result(length, '0');
             char* result_p = &result[0];
 
-            to_digits<std::make_unsigned_t<type>, HEX_LENGTH>()(result_p, length, signed_value);
+            to_digits<hex_type, base_type>()(result_p, length, signed_value);
             return result;            
         }
         
@@ -392,10 +396,12 @@ namespace nandemo::detail
                 return convert_hex(value);
             }
         }
+    
+    private:
 
         inline std::string convert_binary(type value) const
         {
-            return integral_type<type, BINARY_LENGTH>()(value);
+            return integral_type<type, base_type>()(value);
         }
 
         inline std::string convert_decimal(type value) const
@@ -412,12 +418,12 @@ namespace nandemo::detail
                     *result_p = '-';
                 }
 
-                to_digits<type, DECIMAL_LENGTH>()(&result[padding - length + offset], length, abs_value);
+                to_digits<type, base_type>()(&result[padding - length + offset], length, abs_value);
                 return result;
             }
             else
             {
-                return integral_type<type, DECIMAL_LENGTH>()(value);
+                return integral_type<type, base_type>()(value);
             }            
         }
 
@@ -428,12 +434,12 @@ namespace nandemo::detail
             if (const usize length = math::digits_hex_unroll4(signed_value); padding > length)
             {
                 std::string result(padding, '0');
-                to_digits<std::make_unsigned_t<type>, HEX_LENGTH>()(&result[padding - length], length, signed_value);
+                to_digits<std::make_unsigned_t<type>, base_type>()(&result[padding - length], length, signed_value);
                 return result;
             }
             else
             {
-                return integral_type<type, HEX_LENGTH>()(value);
+                return integral_type<type, base_type>()(value);
             }
         }
 
@@ -501,7 +507,7 @@ namespace nandemo::detail
         }
         else
         {
-            return integral_type<type, 10>()(value);
+            return integral_type<type, DECIMAL_LENGTH>()(value);
         }
     }
 
