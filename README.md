@@ -27,7 +27,7 @@ nandemo::to_string(value); // "999"
 
 // float point type
 float f_value{1.0f};
-nandemo::to_string(value2); // "1.000000"
+nandemo::to_string(f_value); // "1.000000"
 
 // bool type
 bool b_value{true};
